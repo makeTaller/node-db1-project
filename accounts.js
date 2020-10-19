@@ -37,11 +37,17 @@ router.get("/:id", (req, res) =>{
 
 router.post("/:id", (req,res) => {
     const { id } = req.params;
+    const record = req.body;
 
-    db.update("accounts") 
-      .where("id", id )
-      .then( (account) => {
-          res.status(400).json({ data: account })
+    db("accounts") 
+      .insert(record, "id")
+      .then( (record_ID) => {
+          db("accounts")
+            .where({ id: record_ID[0] })
+            .first()
+            .then(record => {
+                res.status(200).json({ data: record})
+            })
       })
 })
 
