@@ -1,4 +1,5 @@
-const express = require("express") 
+const express = require("express"); 
+const { where } = require("./data/dbConfig");
 const db = require("./data/dbConfig")
 
 const router = express.Router();
@@ -9,7 +10,7 @@ router.get("/", (req, res) =>{
         db.select("*")
           .from("accounts")
           .then( ( account ) => {
-              res.status(400).json({ data: account })
+              res.status(200).json({ data: account })
           }) 
           .catch((err) =>{
               console.log("error", err )
@@ -24,10 +25,10 @@ router.get("/:id", (req, res) =>{
 
         db.select("*")
           .from("accounts")
-          .where("id", id )
+          .where( { id } )
           .first()
           .then( ( account ) => {
-              res.status(400).json({ data: account })
+              res.status(200).json({ data: account })
           }) 
           .catch((err) =>{
               console.log("error", err )
@@ -35,22 +36,66 @@ router.get("/:id", (req, res) =>{
             })
 })
 
-router.post("/:id", (req,res) => {
-    const { id } = req.params;
-    const record = req.body;
+router.post("/", (req,res) => {
+    const records = {
+        name: req.body.name,
+        budget: req.body.budget,
+    };
 
-    db("accounts") 
-      .insert(record, "id")
+    db('accounts') 
+      .insert(records, "id")
       .then( (record_ID) => {
-          db("accounts")
+          db('accounts')
             .where({ id: record_ID[0] })
-            .first()
             .then(record => {
                 res.status(200).json({ data: record})
             })
+            .catch( error => {
+              res.status(500).json(error)
+            })
+      })
+      .catch( error => {
+        res.status(500).json(error)
       })
 })
 
+router.put("/:id", (req,res) => {
+    const { id } = req.params
 
+    console.log(id)
+
+    const record = { 
+        name: req.body.name,
+        budget: req.body.budget
+    } 
+
+    db('accounts')
+        .where({ id })
+        .update(record, " id")
+        .then( count => {
+            if (count > 0) {
+                res.status(204).json( { data: count })
+            }else (
+                res.status(404).json({ message: "There is no message to update"})
+            )
+        })
+        .catch (error => {
+            res.status(500).json({ message: " No such thing."})
+        })
+        
+})
+
+router.delete("/:id", async (req,res, next) =>{ 
+
+    try {
+       const { id } = req.params
+       await db('accounts').where( "id", req.params.id ).del()
+        res.status(204).end()
+    }catch (error) {
+        next(error)
+    }
+
+
+})
 
 module.exports = router;
